@@ -4,6 +4,13 @@ Unofficial API reference for EUDAMED, the European database of medical devices.
 
 [View the API reference here.][html]
 
+More links:
+
+* [BEUDAMED: Better EUDAMED search engine][beudamed]. Use this to explore EUDAMED data in a fast, modern and
+  user-friendly way.
+* [EUDAMED][eudamed]: The original search engine, whose API this repository refers to. Use this to explore
+  EUDAMED data in the, umm, *original* way.
+
 ## Rationale
 
 The introduction of a unified database for medical devices across all European countries is a good idea - it
@@ -85,8 +92,9 @@ writing it. Because it's truly a mess.
 <!-- Links -->
 
 [html]: https://openregulatory.github.io/eudamed-api/
-[openfda]: https://open.fda.gov
+[eudamed]: https://ec.europa.eu/tools/eudamed/eudamed
 [beudamed]: https://beudamed.com
+[openfda]: https://open.fda.gov
 [yml]: eudamed_api_openapi_3_1.yml
 [swagger-editor]: https://editor.swagger.io
 [swagger-editor-next]: https://editor-next.swagger.io
