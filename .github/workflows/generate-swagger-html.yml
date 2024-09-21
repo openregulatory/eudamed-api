@@ -18,14 +18,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        npm install -g @apidevtools/swagger-cli
-        npm install -g redoc-cli
-
-    - name: Bundle OpenAPI file
-      run: swagger-cli bundle eudamed_api_openapi3_1.yaml --outfile swagger.yaml --type yaml
+        npm install -g @redocly/cli
 
     - name: Generate HTML
-      run: redoc-cli bundle swagger.yaml --output index.html
+      run: redocly build-docs eudamed_api_openapi_3_1.yml --output index.html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
