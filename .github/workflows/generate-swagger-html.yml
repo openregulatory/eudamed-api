@@ -1,0 +1,36 @@
+name: Generate Swagger HTML
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  generate-swagger-html:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: |
+        npm install -g @apidevtools/swagger-cli
+        npm install -g redoc-cli
+
+    - name: Bundle OpenAPI file
+      run: swagger-cli bundle eudamed_api_openapi3_1.yaml --outfile swagger.yaml --type yaml
+
+    - name: Generate HTML
+      run: redoc-cli bundle swagger.yaml --output index.html
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: .
+        publish_branch: gh-pages
+        keep_files: true

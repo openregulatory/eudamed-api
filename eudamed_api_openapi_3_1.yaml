@@ -1,0 +1,1220 @@
+openapi: 3.1.0
+info:
+  title: EUDAMED API Documentation (unofficial)
+  description: |-
+    This is the unofficial API documentation for the EUDAMED API. EUDAMED is the European database of medical devices.
+
+    We at [OpenRegulatory](https://openregulatory.com) built a better EUDAMED, called [BEUDAMED](https://beudamed.com). While building it, we learned a thing or two about the EUDAMED data structure.
+
+    We share our findings here because we believe that this level of openness and transparency ultimately leads to technological progress, with beneficial second-order effects for the EU, medical device manufacturers and, most importantly, patients.
+    
+    In the past, these values led us to publish all our [MDR / ISO 13485 templates](https://openregulatory.com/templates) for free which are nowadays used by hundreds of companies (and known by Notified Bodies) and have enabled medical device manufacturers to enter the market at a much lower cost.
+
+  license:
+    name: MIT License
+    url: https://opensource.org/license/mit
+  version: "0.1"
+externalDocs:
+  description: View on GitHub
+  url: http://github.com/openregulatory/eudamed-api
+servers:
+  - url: https://ec.europa.eu/tools/eudamed/api
+tags:
+  - name: devices
+    description: Endpoint for devices
+  - name: actors
+    description: Endpoint for actors (manufacturers, importers, etc.)
+paths:
+  /devices/udiDiData:
+    get:
+      tags:
+        - devices
+      summary: List devices based on a search query
+      description: This is the endpoint used by the UI when you perform a device search. Note that it also works when the search query is empty. In simple terms, this returns the list of devices which are displayed by the UI. Most importantly, that list is in the `content` key of the response. Other useful pagination data is returned, too, e.g. `first`, `last` and `totalPages`.
+      operationId: listDevices
+      parameters:
+        - name: page
+          in: query
+          description: The page number of results which should be returned. Starts at 1.
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          description: The count of results which should be returned per page. Maximum of 300 (the options shown in the EU are less).
+          required: true
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: Another parameter about the count of results per page. Seems to be a duplicate of `pageSize`. Not sure which one overrides which.
+          required: true
+          schema:
+            type: integer
+        - name: iso2Code
+          in: query
+          description: Probably the language of results which should be returned. Commonly `en`.
+          required: true
+          schema:
+            type: string
+        - name: languageIso2Code
+          in: query
+          description: Probalby another parameter about the language of results to be returned, seems to be a duplicate of `iso2Code`. Not sure which one overrides which. Commonly `en`.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UdiDiDataList'
+  /devices/udiDiData/{deviceId}:
+    get:
+      tags:
+        - devices
+      summary: Get more data for a specific device
+      description: "This is the endpoint used by the UI when you click on a specific device. Things get a bit messy here: First off, the device data returned by this endpoint *looks* similar like the list data returned by the search endpoint above. However, the data here is more detailed. Additionally, the UI actually performs *two* API queries here - the second one hits the `basicUdiData` endpoint (below) which provides *additional* data for this level. Think of it this way: This endpoint provides data for a specific *device version* (e.g. v1.0 of a software device); the `basicUdiDi` endpoint below provides data spanning *across all versions of the device* (e.g. all versions of a software device in general). Confusing."
+      operationId: showDevice
+      parameters:
+        - name: deviceId
+          in: path
+          description: ID of device to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: languageIso2Code
+          in: query
+          description: Probably the language of what to return. Commonly `en`.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UdiDiData'
+  /devices/basicUdiData/{basicUdiDiId}:
+    get:
+      tags:
+        - devices
+      summary: Get data for a specific, umm.. higher-level device? The UDI stuff is confusing.
+      description: This is the *second* endpoint which is queried by the UI when you navigate to a device detail page. It contains *even more* additional device data, i.e. more device data than the other device endpoint (used in the same view), and more data than when you search. The context here is probably that a "Basic UDI-DI" is something of a higher-level identifier, i.e. it contains information valid across device versions. This is in contrast to the device endpoint which might only contain data for *one specific* device version.
+      operationId: showBasicUdiDi
+      parameters:
+        - name: basicUdiDiId
+          in: path
+          description: ID of device to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: languageIso2Code
+          in: query
+          description: Probably the language of what to return. Commonly `en`.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicUdiDiData'
+  /actors/{actorId}/publicInformation:
+    get:
+      tags:
+        - actors
+      summary: Get data for a specific actor (manufacturer, importer, etc.)
+      description: This is the endpoint used by the UI when you click on a specific actor (e.g. manufacturer, importer, etc.). Like with devices (= `udiDiData`), this endpoint provides more data on an actor than its search endpoint.
+      operationId: showActor
+      parameters:
+        - name: actorId
+          in: path
+          description: ID of actor to return
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: languageIso2Code
+          in: query
+          description: Probably the language of what to return. Commonly `en`.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Actor'
+components:
+  schemas:
+    UdiDiDataList:
+      type: object
+      description: The object returned when you perform a device search. Most importantly, it contains the list of displayed devices in the `content` key.
+      properties:
+        content:
+          type: array
+          description: The search results (= devices).
+          items:
+            $ref: '#/components/schemas/UdiDiDataListEntry'
+        first:
+          type: boolean
+          description: Indicates if this is the first page of results.
+        last:
+          type: boolean
+          description: Indicates if this is the last page of results.
+        number:
+          type: integer
+          description: The current page number (starts at `1`).
+        numberOfElements:
+          type: integer
+          description: The number of elements in the current page.
+        size:
+          type: integer
+          description: The requested size of each page. Not sure.
+        sort:
+          type: object
+          description: Sorting information. Not sure how this works.
+        totalElements:
+          type: integer
+          description: The total number of elements across all pages. Not sure.
+        totalPages:
+          type: integer
+          description: The total number of pages.
+    UdiDiDataListEntry:
+      type: object
+      description: This is one entry in the search results provided by `UdiDiDataList`, specifically in the `content` key there. It contains basic device information, but less device information than the dedicated device endpoints (see below).
+      properties:
+        basicUdi:
+          type: string
+          description: The Basic UDI-DI identifier.
+        primaryDi:
+          type: string
+          description: The primary Device Identifier.
+        uuid:
+          type: string
+          format: uuid
+          description: ID of the device. This seems to be an internal and unique value within the Eudamed database.
+        ulid:
+          type: string
+          description: Another identifier for the device. No clue how its purpose differs from `uuid`.
+        basicUdiDiDataUlid:
+          type: string
+          description: Same here. Another identifier, no clue what its purpose is.
+        riskClass:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Code representing the risk class of the device. It's an enum, see the options below. The slightly confusing part here is that legacy (e.g. MDD) and current (e.g. MDR) devices share the same risk classes - e.g. a class I MDD device would have the same enum value like a class I MDR device, even though the classification rules for those are different.
+              enum:
+                - refdata.risk-class.class-i
+                - refdata.risk-class.class-iia
+                - refdata.risk-class.class-iib
+                - refdata.risk-class.class-iii
+                - refdata.risk-class.ivd-general
+                - refdata.risk-class.class-a
+                - refdata.risk-class.class-b
+                - refdata.risk-class.class-c
+                - refdata.risk-class.class-d
+                - refdata.risk-class.ivd-annex-ii-list-a
+                - refdata.risk-class.ivd-annex-ii-list-b
+                - refdata.risk-class.ivd-devices-self-testing
+                - refdata.risk-class.aimdd
+        tradeName:
+          type: string
+          description: The trade name or brand name of the device. Either here or somewhere else, sometimes multiple names for different languages can be entered as an array of object. Not sure.
+        manufacturerName:
+          type: string
+          description: Name of the device manufacturer. Note how this starts duplicating the data of the `Manufacturer` object further below. It starts getting confusing.
+        manufacturerSrn:
+          type: string
+          description: Single Registration Number (SRN) of the manufacturer. Partial duplication of `Manufacturer` object.
+        deviceStatusType:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Enum representing the status of the device.
+              enum:
+                - refdata.device-model-status.on-the-market
+                - refdata.device-model-status.no-longer-on-the-market
+                - refdata.device-model-status.not-intended-for-eu-market
+        manufacturerStatus:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Code representing the status of the manufacturer. Again, likely duplication of data in the `Manufacturer` object.
+        latestVersion:
+          type: boolean
+          description: Indicates if this is the latest version of the device data. It seems device data is versioned, but it's not clear how to query for specific (old) versions of the data.
+        versionNumber:
+          type: integer
+          description: Version number of the device data.
+        reference:
+          type: string
+          description: Reference code or number for the device. No clue what this is.
+        authorisedRepresentativeSrn:
+          type: string
+          description: SRN of the authorized representative. Similar as for `Manufacturer`, there's duplication here again, because `AuthorizedRepresentative` is actually its own object (further below), but only some of those keys are copied over here. Ugh.
+        authorisedRepresentativeName:
+          type: string
+          description: Name of the authorized representative. Same note as above.
+    UdiDiData:
+      type: object
+      description: "This is the more detailed data returned when visiting the detail page of a device. Note that this is only one of two parts: The second part of the device data is the `BasicUdiData`, see below."
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          description: ID of the device. This seems to be an internal and unique value within the Eudamed database. If I remember correctly, this corresponds to the `uuid` returned by the search results above.
+        ulid:
+          type: string
+          description: Another identifier for the device. No clue how its purpose differs from `uuid`.
+        primaryDi:
+          type: object
+          description: Things start getting confusing here. Some UDI information.
+          properties:
+            uuid:
+              type: string
+              format: uuid
+            code:
+              type: string
+            issuingAgency:
+              type: object
+              properties:
+                code:
+                  type: string
+            type:
+              type: string
+            new:
+              type: boolean
+        containedItem:
+          type: object
+          description: No clue.
+        marketInfoLink:
+          type: object
+          description: Generally speaking, this seems to contain information about which countries this device is available in. The data looks really clunky.
+          properties:
+            uuid:
+              type: string
+              format: uuid
+            ulid:
+              type: string
+            msWhereAvailable:
+              type: array
+              items:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    format: uuid
+                  marketInfoLinkId:
+                    type: integer
+                  country:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                      iso2Code:
+                        type: string
+                      nonEUMemberState:
+                        type: boolean
+                  startDate:
+                    type: string
+                  endDate:
+                    type: string
+                  new:
+                    type: boolean
+            versionState:
+              type: object
+              properties:
+                code:
+                  type: string
+            latestVersion:
+              type: boolean
+            versionNumber:
+              type: integer
+            discardedDate:
+              type: string
+            versionDate:
+              type: string
+              format: date-time
+            new:
+              type: boolean
+        secondaryDi:
+          type: object
+          description: No clue. UDIs are a mess.
+        secondaryDiApplicable:
+          type: boolean
+          description: It gets worse.
+        additionalDescription:
+          type: string
+          description: What the hell is an additional description?
+        tradeName:
+          type: object
+          description: Trade names in different languages. Confusing.
+          properties:
+            texts:
+              type: array
+              items:
+                type: object
+                properties:
+                  language:
+                    type: object
+                  text:
+                    type: string
+                  allLanguagesApplicable:
+                    type: boolean
+        tradeNameApplicable:
+          type: boolean
+          description: No clue.
+        annexXVIApplicable:
+          type: boolean
+          description: Some regulatory information.
+        brainElectroStimulation:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        cmrSubstance:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        cmrSubstances:
+          type: array
+          description: Somehow related to `cmrSubstance` and likely contains an array of things, but no clue what those might be.
+          items: {}
+        componentDis:
+          type: array
+          description: No clue.
+          items: {}
+        contactLenses:
+          type: boolean
+          description: "One of many (many!) booleans about device characteristics. It gets even more confusing for this one because the UI shows something about \"soft\" contact lenses, but in the data you only have the key `contactLenses`."
+        directMarking:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        directMarkingSameAsUdiDi:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        directMarkingDi:
+          type: object
+          description: No clue.
+        emr:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        endocrineDisruptingSubstances:
+          type: array
+          description: Somehow related to `endocrineDisruptor` and likely contains an array, but no clue about the structure of its items.
+          items: {}
+        endocrineDisruptor:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        equipmentForAdiposeTissue:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        fillingByInjection:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        humanProductSubstances:
+          type: array
+          description: No clue.
+          items: {}
+        latex:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        udiPiType:
+          type: object
+          description: UDIs are a mess.
+          properties:
+            batchNumber:
+              type: boolean
+            serializationNumber:
+              type: boolean
+            manufacturingDate:
+              type: boolean
+            expirationDate:
+              type: boolean
+            softwareIdentification:
+              type: boolean
+        medicinalProductSubstances:
+          type: array
+          description: No clue.
+          items: {}
+        cndNomenclatures:
+          type: array
+          items:
+            type: object
+            properties:
+              uuid:
+                type: string
+              code:
+                type: string
+              description:
+                type: object
+                properties:
+                  texts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        language:
+                          type: object
+                          properties:
+                            isoCode:
+                              type: string
+                            name:
+                              type: string
+                        text:
+                          type: string
+                        allLanguagesApplicable:
+                          type: boolean
+              gmdnNomenclatures:
+                type: array
+                items: {}
+        oemApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        productDesigner:
+          type: object
+        placedOnTheMarket:
+          type: object
+          description: When and where this device was placed on the market.
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+            iso2Code:
+              type: string
+            nonEUMemberState:
+              type: boolean
+        productsToBeIntroduced:
+          type: object
+          description: No clue.
+        reference:
+          type: string
+          description: No clue.
+        reprocessed:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        maxNumberOfReuses:
+          type: integer
+        maxNumberOfReusesApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        singleUse:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        clinicalSizeApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        clinicalSizes:
+          type: array
+          items: {}
+        deviceStatus:
+          type: object
+          properties:
+            uuid:
+              type: string
+              format: uuid
+            type:
+              type: object
+              properties:
+                code:
+                  type: string
+                  enum:
+                    - refdata.device-model-status.on-the-market
+                    - refdata.device-model-status.no-longer-on-the-market
+                    - refdata.device-model-status.not-intended-for-eu-market
+            statusDate:
+              type: string
+              format: date
+            new:
+              type: boolean
+        subStatuses:
+          type: array
+          items: {}
+        sterile:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        sterilization:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        storageApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        storageHandlingConditions:
+          type: array
+          items: {}
+        unitOfUse:
+          type: object
+        criticalWarningsApplicable:
+          type: boolean
+        criticalWarnings:
+          type: array
+          items: {}
+        additionalInformationUrl:
+          type: string
+        storageSymbol:
+          type: object
+        baseQuantity:
+          type: integer
+        versionDate:
+          type: string
+          format: date-time
+        versionState:
+          type: object
+          properties:
+            code:
+              type: string
+        latestVersion:
+          type: boolean
+        versionNumber:
+          type: integer
+        newDevice:
+          type: boolean
+        discardedDate:
+          type: string
+        linkedUdiDiView:
+          type: object
+        new:
+          type: boolean
+
+    BasicUdiDiData:
+      type: object
+      description: So you probably already thought that the `UdiDiData` was lengthy and looked rather messy. Well, good luck, because you're only half done as there's another object which contains even more device data - this one.
+      properties:
+        uuid:
+          type: string
+          description: ID of the `BasicUdiDi` entry. Note that this differs from the `uuid` of the `UdiDiEntry` above. So you need *two* uuids to query all information for a device.
+          format: uuid
+        ulid:
+          type: string
+        udiDiData:
+          type: object
+        manufacturer:
+          description: Data on the manufacturer. In contrast to the `UdiDiData` endpoint further above, this actually contains the complete information on the manufacturer and not only a weird slice of it.
+          $ref: '#/components/schemas/Actor'
+        authorisedRepresentative:
+          description: Data on the authorized representative. In contrast to the `UdiDiData` endpoint further above, this actually contains the complete information on the authorized representative and not only a weird slice of it.
+          $ref: '#/components/schemas/AuthorizedRepresentative'
+        active:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        administeringMedicine:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        animalTissues:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        nbDecision:
+          type: object
+        basicUdi:
+          type: object
+          properties:
+            uuid:
+              type: string
+              format: uuid
+            code:
+              type: string
+            issuingAgency:
+              type: object
+              properties:
+                code:
+                  type: string
+            type:
+              type: string
+            new:
+              type: boolean
+        companionDiagnostics:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        reagent:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        instrument:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        professionalTesting:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        kit:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        device:
+          type: boolean
+        multiComponent:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        deviceCriterion:
+          type: string
+        basicUdiType:
+          type: object
+        deviceModel:
+          type: string
+        deviceModelApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        deviceName:
+          type: string
+        humanTissues:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        humanProduct:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        medicinalProduct:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        implantable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        sutures:
+          type: object
+        legislation:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - refdata.applicable-legislation.mdd
+                - refdata.applicable-legislation.mdr
+                - refdata.applicable-legislation.ivdd
+                - refdata.applicable-legislation.ivdr
+                - refdata.applicable-legislation.aimdd
+            legacyDirective:
+              type: boolean
+        measuringFunction:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        microbialSubstances:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        nearPatientTesting:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        reusable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        riskClass:
+          type: object
+          properties:
+            code:
+              type: string
+              description: The risk class of this device. Note that the risk class is stored here, with the `BasicUdiDiData`, and not with the actual device, i.e. in the `UdiDiData`. Confusing.
+              enum:
+                - refdata.risk-class.class-i
+                - refdata.risk-class.class-iia
+                - refdata.risk-class.class-iib
+                - refdata.risk-class.class-iii
+                - refdata.risk-class.ivd-general
+                - refdata.risk-class.class-a
+                - refdata.risk-class.class-b
+                - refdata.risk-class.class-c
+                - refdata.risk-class.class-d
+                - refdata.risk-class.ivd-annex-ii-list-a
+                - refdata.risk-class.ivd-annex-ii-list-b
+                - refdata.risk-class.ivd-devices-self-testing
+                - refdata.risk-class.aimdd
+        selfTesting:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        specialDeviceType:
+          type: object
+          description: "So as you've seen, many device characteristics are modeled as booleans. So far, so good. But it gets really confusing now. Two special device types exist: Software and orthopedic devices (of all things). So if a device is software or an orthopedic device, the value here is set to a specific enum. This has surprising and very weird consequences, e.g. a device can't be both software and orthopedic. Weird. Why?"
+          properties:
+            code:
+              type: string
+              enum:
+                - refdata.special-mdd-device-type.software
+                - refdata.special-mdr-device-type.software
+                - refdata.special-ivdd-device-type.software
+                - refdata.special-ivd-device-type.software
+                - refdata.special-mdd-device-type.orthopedic
+                - refdata.special-mdr-device-type.orthopedic
+        specialDeviceTypeApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        medicalPurpose:
+          type: object
+          description: The intended use of the device. Often not provided even though this seems like kinda important information, chuckle..
+        typeExaminationApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        deviceCertificateInfoList:
+          type: array
+          description: The list of certificates for this device. Also contains the notified body which issued each certificate.
+          items:
+            $ref: '#/components/schemas/DeviceCertificateInfo'
+        deviceCertificateInfoListForDisplay:
+          type: array
+          description: What a mess. Seems to contain the exact same values as `deviceCertificateInfoList`, but someone thought it'd be a create idea to create another key and append `ForDisplay` to it.
+          items:
+            $ref: '#/components/schemas/DeviceCertificateInfo'
+        clinicalInvestigationApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        clinicalInvestigationLinks:
+          type: array
+          items: {}
+        versionDate:
+          type: string
+          format: date-time
+        versionState:
+          type: object
+          properties:
+            code:
+              type: string
+        latestVersion:
+          type: boolean
+        versionNumber:
+          type: integer
+        legacyDeviceUdiDiApplicable:
+          type: boolean
+          description: One of many (many!) booleans about device characteristics.
+        discardedDate:
+          type: string
+        linkedSscp:
+          $ref: '#/components/schemas/LinkedSscp'
+        new:
+          type: boolean
+
+    DeviceCertificateInfo:
+      type: object
+      description: This is a certificate entry in the `BasicUdiDiData` endpoint. It contains certificate information for a device, and the notified body which issued it.
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        ulid:
+          type: string
+        certificateExpiry:
+          type: string
+          format: date
+        certificateNumber:
+          type: string
+        certificateRevision:
+          type: string
+        notifiedBody:
+          $ref: '#/components/schemas/NotifiedBody'
+        certificateType:
+          type: object
+          properties:
+            code:
+              type: string
+        versionState:
+          type: object
+          properties:
+            code:
+              type: string
+        latestVersion:
+          type: boolean
+        versionNumber:
+          type: integer
+        discardedDate:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        status:
+          type: object
+          properties:
+            code:
+              type: string
+        nbProvidedCertificate:
+          type: boolean
+        startingValidityDate:
+          type: string
+          format: date
+        new:
+          type: boolean
+
+    NotifiedBody:
+      type: object
+      description: The notified body which issued a certificate.
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        ulid:
+          type: string
+        versionNumber:
+          type: integer
+        versionState:
+          type: object
+          properties:
+            code:
+              type: string
+        latestVersion:
+          type: boolean
+        lastUpdateDate:
+          type: string
+          format: date-time
+        name:
+          type: string
+        names:
+          type: object
+          properties:
+            texts:
+              type: array
+              items:
+                type: object
+                properties:
+                  language:
+                    type: object
+                  text:
+                    type: string
+                  allLanguagesApplicable:
+                    type: boolean
+        abbreviatedNames:
+          type: object
+          properties:
+            texts:
+              type: array
+              items:
+                type: object
+                properties:
+                  language:
+                    type: object
+                  text:
+                    type: string
+                  allLanguagesApplicable:
+                    type: boolean
+        actorType:
+          type: object
+          properties:
+            code:
+              type: string
+            srnCode:
+              type: string
+            category:
+              type: string
+        status:
+          type: object
+          properties:
+            code:
+              type: string
+        statusFromDate:
+          type: string
+        countryIso2Code:
+          type: string
+        countryName:
+          type: string
+        countryType:
+          type: string
+        geographicalAddress:
+          type: string
+        electronicMail:
+          type: string
+        telephone:
+          type: string
+        srn:
+          type: string
+    LinkedSscp:
+      type: object
+      properties:
+        ulid:
+          type: string
+        validated:
+          type: boolean
+        uuid:
+          type: string
+          format: uuid
+        referenceNumber:
+          type: string
+        revisionNumber:
+          type: string
+        issueDate:
+          type: string
+          format: date
+        versionNumber:
+          type: integer
+        inactive:
+          type: boolean
+        inactiveStatusDate:
+          type: string
+
+    Actor:
+      type: object
+      description: An actor is typically a manufacturer or importer.
+      properties:
+        importers:
+          type: array
+          items: {}
+        nonEuManufacturers:
+          type: object
+        actorDataPublicView:
+          type: object
+          description: No clue why any sane developer would put all relevant data in a `actorDataPublicView` key. Like.. is the other public data not for public viewing?
+          properties:
+            ulid:
+              type: string
+            uuid:
+              type: string
+              format: uuid
+            type:
+              type: object
+              properties:
+                code:
+                  type: string
+                  enum:
+                    - refdata.actor-type.manufacturer
+                srnCode:
+                  type: string
+                category:
+                  type: string
+            actorStatus:
+              type: object
+              properties:
+                code:
+                  type: string
+                  enum:
+                    - refdata.actor-status.active
+            actorStatusFromDate:
+              type: string
+            country:
+              type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                iso2Code:
+                  type: string
+                nonEUMemberState:
+                  type: boolean
+            name:
+              type: object
+              properties:
+                texts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      language:
+                        type: object
+                      text:
+                        type: string
+                      allLanguagesApplicable:
+                        type: boolean
+            abbreviatedName:
+              type: object
+            europeanVatNumberApplicable:
+              type: boolean
+            europeanVatNumber:
+              type: string
+            eudamedIdentifier:
+              type: string
+            tradeRegister:
+              type: string
+            eori:
+              type: string
+            organizationIdentificationDocuments:
+              type: array
+              items: {}
+            authorisedRepresentatives:
+              type: array
+              description: It gets confusing here again. A manufacturer can have *multiple* authorized representatives. I guess the scenario here is if you select different authorized representatives for different devices. So this would return an array of all authorized representatives the manufacturer has across all their devices (at least that's my theory).
+              items:
+                $ref: '#/components/schemas/AuthorizedRepresentative'
+            competentAuthorityResponsibility:
+              type: object
+            telephone:
+              type: string
+            electronicMail:
+              type: string
+            website:
+              type: string
+            actorAddress:
+              type: object
+              properties:
+                streetName:
+                  type: string
+                streetInfoApplicable:
+                  type: boolean
+                buildingNumber:
+                  type: string
+                complement:
+                  type: string
+                postbox:
+                  type: string
+                gps:
+                  type: string
+                cityName:
+                  type: string
+                postalZone:
+                  type: string
+                country:
+                  $ref: '#/components/schemas/Country'
+            validatorName:
+              type: string
+              description: Data on the competent authority.
+            validatorUuid:
+              type: string
+              description: Data on the competent authority.
+              format: uuid
+            validatorType:
+              type: object
+              description: Data on the competent authority.
+              properties:
+                code:
+                  type: string
+                srnCode:
+                  type: string
+                category:
+                  type: string
+            validatorSrn:
+              type: string
+              description: Data on the competent authority.
+            validatorAddress:
+              description: Data on the competent authority.
+              $ref: '#/components/schemas/Address'
+            validatorEmail:
+              type: string
+              description: Data on the competent authority.
+            validatorTelephone:
+              type: string
+              description: Data on the competent authority.
+            regulatoryComplianceResponsibles:
+              type: array
+              description: The PRRCs of the company. A company can have multiple PRRCs.
+              items:
+                type: object
+                properties:
+                  firstName:
+                    type: string
+                  familyName:
+                    type: string
+                  electronicMail:
+                    type: string
+                  telephone:
+                    type: string
+                  position:
+                    type: string
+                  geographicalAddress:
+                    $ref: '#/components/schemas/Address'
+            legislationLinks:
+              type: object
+            latestSubsidiary:
+              type: object
+            certificates:
+              type: object
+            latestVersion:
+              type: boolean
+            versionNumber:
+              type: integer
+            versionState:
+              type: object
+              properties:
+                code:
+                  type: string
+            lastUpdateDate:
+              type: string
+              format: date-time
+            accuracyData:
+              type: array
+              items: {}
+            lastAccuracyDate:
+              type: string
+    
+    Country:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        iso2Code:
+          type: string
+        nonEUMemberState:
+          type: boolean
+    
+    Address:
+      type: object
+      properties:
+        streetName:
+          type: string
+        streetInfoApplicable:
+          type: boolean
+        buildingNumber:
+          type: string
+        complement:
+          type: string
+        postbox:
+          type: string
+        gps:
+          type: string
+        cityName:
+          type: string
+        postalZone:
+          type: string
+        country:
+          $ref: '#/components/schemas/Country'
+
+    AuthorizedRepresentative:
+      type: object
+      properties:
+        nonEuManufacturerUuid:
+          type: string
+          format: uuid
+        authorisedRepresentativeUuid:
+          type: string
+          format: uuid
+        authorisedRepresentativeUlid:
+          type: string
+        name:
+          type: string
+        srn:
+          type: string
+        address:
+          type: string
+        countryName:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        terminationDate:
+          type: string
+        email:
+          type: string
+        telephone:
+          type: string
+        mandateStatus:
+          type: object
+          properties:
+            code:
+              type: string
+        actorStatus:
+          type: object
+          properties:
+            code:
+              type: string
+        actorStatusFromDate:
+          type: string
+        versionNumber:
+          type: integer
+        versionState:
+          type: object
+          properties:
+            code:
+              type: string
+        latestVersion:
+          type: boolean
+        lastUpdateDate:
+          type: string
+          format: date-time
+        ulid:
+          type: string
