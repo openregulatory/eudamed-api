@@ -12,6 +12,9 @@ More links:
   user-friendly way.
 * [EUDAMED][eudamed]: The original search engine, whose API this repository refers to. Use this to explore
   EUDAMED data in the, umm, *original* way.
+* [eudamedburn.com][eudamedburn]: An informational website which estimates how much money has been burned on
+  EUDAMED development already, based on public EU financial data. At the time of writing, around €26M (around
+  2x the cost of training GPT-3).
 
 ## Rationale
 
@@ -95,6 +98,7 @@ writing it. Because it's truly a mess.
 
 [html]: https://openregulatory.github.io/eudamed-api/
 [eudamed]: https://ec.europa.eu/tools/eudamed/eudamed
+[eudamedburn]: https://eudamedburn.com
 [beudamed]: https://beudamed.com
 [beudamed-rationale]: https://openregulatory.com/beudamed-better-eudamed/
 [openfda]: https://open.fda.gov
