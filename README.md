@@ -15,6 +15,7 @@ More links:
 * [eudamedburn.com][eudamedburn]: An informational website which estimates how much money has been burned on
   EUDAMED development already, based on public EU financial data. At the time of writing, around €26M (around
   2x the cost of training GPT-3).
+* [EUDAMED Device Monitor (Apify actor)][eudamed-monitor]: A scheduled scraper built on this public API that turns the registry into structured JSON/CSV/Excel and adds a change-monitoring mode (only devices updated on/after a chosen date). Free; public data only; not affiliated with the Commission.
 
 ## Rationale
 
