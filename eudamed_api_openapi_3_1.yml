@@ -98,17 +98,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UdiDiData'
-  /devices/basicUdiData/{basicUdiDiId}:
+  /devices/basicUdiData/udiDiData/{deviceId}:
     get:
       tags:
         - devices
       summary: Get data for a specific, umm.. higher-level device? The UDI stuff is confusing.
-      description: This is the *second* endpoint which is queried by the UI when you navigate to a device detail page. It contains *even more* additional device data, i.e. more device data than the other device endpoint (used in the same view), and more data than when you search. The context here is probably that a "Basic UDI-DI" is something of a higher-level identifier, i.e. it contains information valid across device versions. This is in contrast to the device endpoint which might only contain data for *one specific* device version.
+      description: This is the *second* endpoint which is queried by the UI when you navigate to a device detail page. It contains *even more* additional device data, i.e. more device data than the other device endpoint (used in the same view), and more data than when you search. The context here is probably that a "Basic UDI-DI" is something of a higher-level identifier, i.e. it contains information valid across device versions. This is in contrast to the device endpoint which might only contain data for *one specific* device version. Note the path parameter is the *device* UUID from the search result (the same one used for the device endpoint above), not a Basic-UDI-DI id — the previously documented path /devices/basicUdiData/{basicUdiDiId} answers HTTP 404.
       operationId: showBasicUdiDi
       parameters:
-        - name: basicUdiDiId
+        - name: deviceId
           in: path
-          description: ID of device to return
+          description: UUID of the device (from the search result's uuid field) whose Basic-UDI-DI data to return
           required: true
           schema:
             type: string
